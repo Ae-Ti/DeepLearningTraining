@@ -4,7 +4,7 @@
   "metadata": {
     "colab": {
       "provenance": [],
-      "authorship_tag": "ABX9TyMS8WMu8fuh6wC56ZiB5QR3",
+      "authorship_tag": "ABX9TyOUj3WbZNXAVB4q0ceV+8vU",
       "include_colab_link": true
     },
     "kernelspec": {
@@ -34,13 +34,28 @@
         "import seaborn as sns\n",
         "import matplotlib.pyplot as plt\n",
         "from tensorflow.keras.models import Sequential\n",
-        "from tensorflow.keras.layers import Dense"
+        "from tensorflow.keras.layers import Dense\n",
+        "from sklearn.model_selection import KFold\n",
+        "from sklearn.metrics import accuracy_score\n",
+        "!git clone https://github.com/taehojo/data.git"
       ],
       "metadata": {
-        "id": "Lvqe7AH51W7d"
+        "id": "Lvqe7AH51W7d",
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "outputId": "380c3aac-80ed-4699-9f45-2963dcaa2432"
       },
-      "execution_count": 4,
-      "outputs": []
+      "execution_count": 2,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "fatal: destination path 'data' already exists and is not an empty directory.\n"
+          ]
+        }
+      ]
     },
     {
       "cell_type": "markdown",
@@ -341,7 +356,6 @@
     {
       "cell_type": "code",
       "source": [
-        "!git clone https://github.com/taehojo/data.git\n",
         "df = pd.read_csv('./data/pima-indians-diabetes3.csv')\n",
         "\n",
         "print(df[\"diabetes\"].value_counts())\n",
@@ -360,7 +374,7 @@
         "id": "NRpQXLb3XLxe",
         "outputId": "6fe4e42f-1906-4ad6-9c4e-1cef712c6666"
       },
-      "execution_count": 15,
+      "execution_count": null,
       "outputs": [
         {
           "output_type": "stream",
@@ -401,7 +415,7 @@
         "id": "0Ocamq_JZ56W",
         "outputId": "7d57a253-2d73-4e61-fe80-5bde882acab9"
       },
-      "execution_count": 17,
+      "execution_count": null,
       "outputs": [
         {
           "output_type": "stream",
@@ -430,7 +444,6 @@
     {
       "cell_type": "code",
       "source": [
-        "!git clone https://github.com/taehojo/data.git\n",
         "df = pd.read_csv('./data/iris3.csv')\n",
         "print(df.head())\n",
         "sns.pairplot(df,hue='species')\n",
@@ -444,7 +457,7 @@
         "id": "RtQSA5twbNbD",
         "outputId": "c3849237-2aeb-4f96-e108-8cc6f411a27d"
       },
-      "execution_count": 18,
+      "execution_count": null,
       "outputs": [
         {
           "output_type": "stream",
@@ -490,7 +503,7 @@
         "id": "VpSIU-jzcSYG",
         "outputId": "1d1ee967-33c7-47d1-e2de-6a41d8caee7e"
       },
-      "execution_count": 22,
+      "execution_count": null,
       "outputs": [
         {
           "output_type": "stream",
@@ -514,6 +527,86 @@
             "2            1                0               0\n",
             "3            1                0               0\n",
             "4            1                0               0\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "# **K-fold cross validation**"
+      ],
+      "metadata": {
+        "id": "rNRj_Dtwz2Mh"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "df= pd.read_csv('./data/sonar3.csv',header=None)\n",
+        "x= df.iloc[:,0:60]\n",
+        "y= df.iloc[:,60]\n",
+        "\n",
+        "k=5\n",
+        "kfold = KFold(n_splits=k,shuffle=True)\n",
+        "acc_score=[]\n",
+        "\n",
+        "def model_fn():\n",
+        "  model = Sequential()\n",
+        "  model.add(Dense(24,input_dim=60,activation='relu'))\n",
+        "  model.add(Dense(10,activation='relu'))\n",
+        "  model.add(Dense(1,activation='sigmoid'))\n",
+        "  return model\n",
+        "\n",
+        "for train_index, test_index in kfold.split(x):\n",
+        "  X_train, X_test = x.iloc[train_index,:], x.iloc[test_index,:]\n",
+        "  y_train, y_test = y.iloc[train_index], y.iloc[test_index]\n",
+        "\n",
+        "  model = model_fn()\n",
+        "  model.compile(loss='binary_crossentropy', optimizer='adam',metrics=['accuracy'])\n",
+        "  history = model.fit(X_train,y_train,epochs=200,batch_size=10,verbose=0)\n",
+        "\n",
+        "  accuracy = model.evaluate(X_test,y_test)[1]\n",
+        "  acc_score.append(accuracy)\n",
+        "\n",
+        "avg_acc_score = sum(acc_score)/k\n",
+        "\n",
+        "print(acc_score)\n",
+        "print(avg_acc_score)"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "OSNJh1aLuzmR",
+        "outputId": "302b3ebe-c513-4ac3-90ad-2ac293df4c96"
+      },
+      "execution_count": 7,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "2/2 [==============================] - 0s 8ms/step - loss: 0.6858 - accuracy: 0.8095\n",
+            "2/2 [==============================] - 0s 8ms/step - loss: 0.4337 - accuracy: 0.8095\n",
+            "2/2 [==============================] - 0s 7ms/step - loss: 0.3052 - accuracy: 0.9048\n",
+            "2/2 [==============================] - 0s 8ms/step - loss: 0.9626 - accuracy: 0.7805\n"
+          ]
+        },
+        {
+          "output_type": "stream",
+          "name": "stderr",
+          "text": [
+            "WARNING:tensorflow:5 out of the last 9 calls to <function Model.make_test_function.<locals>.test_function at 0x7fe9d70e2d30> triggered tf.function retracing. Tracing is expensive and the excessive number of tracings could be due to (1) creating @tf.function repeatedly in a loop, (2) passing tensors with different shapes, (3) passing Python objects instead of tensors. For (1), please define your @tf.function outside of the loop. For (2), @tf.function has reduce_retracing=True option that can avoid unnecessary retracing. For (3), please refer to https://www.tensorflow.org/guide/function#controlling_retracing and https://www.tensorflow.org/api_docs/python/tf/function for  more details.\n"
+          ]
+        },
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "2/2 [==============================] - 0s 9ms/step - loss: 0.3538 - accuracy: 0.8049\n",
+            "[0.8095238208770752, 0.8095238208770752, 0.9047619104385376, 0.7804877758026123, 0.8048780560493469]\n",
+            "0.8218350768089294\n"
           ]
         }
       ]
