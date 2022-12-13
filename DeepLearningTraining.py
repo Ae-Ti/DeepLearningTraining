@@ -4,7 +4,7 @@
   "metadata": {
     "colab": {
       "provenance": [],
-      "authorship_tag": "ABX9TyOrxGk9TzeH4RFexzzv4H5v",
+      "authorship_tag": "ABX9TyNHZotVjyRjwvPzZP6cQ5Hk",
       "include_colab_link": true
     },
     "kernelspec": {
@@ -34,10 +34,12 @@
         "import seaborn as sns\n",
         "import matplotlib.pyplot as plt\n",
         "from tensorflow.keras.models import Sequential\n",
-        "from tensorflow.keras.layers import Dense\n",
+        "from tensorflow.keras.layers import Dense, Dropout, Flatten, Conv2D, MaxPooling2D\n",
         "from sklearn.model_selection import KFold, train_test_split\n",
         "from sklearn.metrics import accuracy_score\n",
         "from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping\n",
+        "from tensorflow.keras.datasets import mnist\n",
+        "from tensorflow.keras.utils import to_categorical\n",
         "!git clone https://github.com/taehojo/data.git"
       ],
       "metadata": {
@@ -45,15 +47,20 @@
         "colab": {
           "base_uri": "https://localhost:8080/"
         },
-        "outputId": "5a24c5d1-5c68-440b-9d77-998f0e1f39e7"
+        "outputId": "00b9b6ed-ba1e-4730-e9ca-ca2de9583b30"
       },
-      "execution_count": 10,
+      "execution_count": 1,
       "outputs": [
         {
           "output_type": "stream",
           "name": "stdout",
           "text": [
-            "fatal: destination path 'data' already exists and is not an empty directory.\n"
+            "Cloning into 'data'...\n",
+            "remote: Enumerating objects: 21, done.\u001b[K\n",
+            "remote: Counting objects: 100% (21/21), done.\u001b[K\n",
+            "remote: Compressing objects: 100% (18/18), done.\u001b[K\n",
+            "remote: Total 21 (delta 3), reused 20 (delta 2), pack-reused 0\u001b[K\n",
+            "Unpacking objects: 100% (21/21), done.\n"
           ]
         }
       ]
@@ -671,7 +678,7 @@
         "id": "WwevBl4OtyLG",
         "outputId": "66a6dec7-3394-46c9-9ac3-253dbac8f3e2"
       },
-      "execution_count": 11,
+      "execution_count": null,
       "outputs": [
         {
           "output_type": "stream",
@@ -759,7 +766,7 @@
         "id": "Wm7xV7Ua3qOG",
         "outputId": "81f369b1-3272-47d8-8d6d-ee8f32f25507"
       },
-      "execution_count": 16,
+      "execution_count": null,
       "outputs": [
         {
           "output_type": "stream",
@@ -882,6 +889,88 @@
             "1459                     1                      0  \n",
             "\n",
             "[1460 rows x 290 columns]\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "# **CNN** and **Dropout**"
+      ],
+      "metadata": {
+        "id": "Yu6WsQfxDPZO"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "(x_train, y_train), (x_test, y_test) = mnist.load_data()\n",
+        "x_train = x_train.reshape(x_train.shape[0],28,28,1).astype('float32') / 255\n",
+        "x_test = x_test.reshape(x_test.shape[0],28,28,1).astype('float32') / 255\n",
+        "y_train = to_categorical(y_train)\n",
+        "y_test = to_categorical(y_test)\n",
+        "\n",
+        "model = Sequential()\n",
+        "model.add(Conv2D(32,kernel_size=(3,3), input_shape=(28,28,1),activation='relu'))\n",
+        "model.add(Conv2D(64, (3,3), activation='relu'))\n",
+        "model.add(MaxPooling2D(pool_size=(2,2)))\n",
+        "model.add(Dropout(0.25))\n",
+        "model.add(Flatten())\n",
+        "model.add(Dense(128, activation='relu'))\n",
+        "model.add(Dropout(0.5))\n",
+        "model.add(Dense(10, activation='softmax'))\n",
+        "\n",
+        "model.compile(loss='categorical_crossentropy', optimizer='adam', metrics = ['accuracy'])\n",
+        "\n",
+        "modelpath = \"./MNIST_CNN.hdf5\"\n",
+        "checkpointer = ModelCheckpoint(filepath=modelpath,monitor='val_loss',verbose=1,save_best_only=True)\n",
+        "early_stopping_callback = EarlyStopping(monitor ='val_loss',patience=10)\n",
+        "\n",
+        "history = model.fit(x_train, y_train, validation_split=0.25,epochs=30,batch_size=200,verbose=0,callbacks=[checkpointer,early_stopping_callback])\n",
+        "\n",
+        "print('\\n Test Accuracy: %.4f' % (model.evaluate(x_test,y_test)[1]))\n",
+        "\n",
+        "y_vloss = history.history['val_loss']\n",
+        "y_loss = history.history['loss']\n",
+        "\n",
+        "x_len = np.arange(len(y_loss))\n",
+        "plt.plot(x_len,y_vloss,marker='.',c='red',label='Testset_loss')\n",
+        "plt.plot(x_len,y_loss,marker='.',c='blue',label='Trainset_loss')\n",
+        "plt.legend(loc='upper right')\n",
+        "plt.grid()\n",
+        "plt.xlabel('epoch')\n",
+        "plt.show()"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "aAAKvWWfDRtY",
+        "outputId": "d853f33f-6e4d-413a-9b87-bf2445e69463"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "\n",
+            "Epoch 1: val_loss improved from inf to 0.07324, saving model to ./MNIST_CNN.hdf5\n",
+            "\n",
+            "Epoch 2: val_loss improved from 0.07324 to 0.06153, saving model to ./MNIST_CNN.hdf5\n",
+            "\n",
+            "Epoch 3: val_loss improved from 0.06153 to 0.04551, saving model to ./MNIST_CNN.hdf5\n",
+            "\n",
+            "Epoch 4: val_loss improved from 0.04551 to 0.04453, saving model to ./MNIST_CNN.hdf5\n",
+            "\n",
+            "Epoch 5: val_loss improved from 0.04453 to 0.04061, saving model to ./MNIST_CNN.hdf5\n",
+            "\n",
+            "Epoch 6: val_loss did not improve from 0.04061\n",
+            "\n",
+            "Epoch 7: val_loss did not improve from 0.04061\n",
+            "\n",
+            "Epoch 8: val_loss improved from 0.04061 to 0.03891, saving model to ./MNIST_CNN.hdf5\n"
           ]
         }
       ]
